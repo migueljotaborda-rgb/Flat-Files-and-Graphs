@@ -34,14 +34,15 @@ static void PrintRoute(Graph graph, RoutePlanner planner, List<Package> packages
     Console.WriteLine($"Posición inicial: {start}");
     Console.WriteLine($"Paquetes: {packages.Count}   Ubicaciones: {graph.Adjacency.Count}   Calles: {graph.StreetCount} ({graph.OneWayCount} de un solo sentido)");
     string current = start; long total = 0; int n = 0;
-    foreach (var group in route.GroupBy(s => s.Location))
+    for (int i = 0; i < route.Count;)
     {
-        // Route stops are grouped only when consecutive tasks share the same location.
-        var stops = group.ToList(); string target = stops[0].Location;
+        string target = route[i].Location;
+        var stops = new List<Stop>();
+        while (i < route.Count && route[i].Location == target) stops.Add(route[i++]);
         var (distance, path) = planner.PathBetween(current, target);
         total += distance; n++;
-        var drops = stops.Where(s => s.Kind == StopKind.Delivery).Select(s => s.PackageId).Order().ToList();
-        var picks = stops.Where(s => s.Kind == StopKind.Pickup).Select(s => s.PackageId).Order().ToList();
+        var drops = stops.Where(s => s.Kind == StopKind.Delivery).Select(s => s.PackageId).Distinct().Order().ToList();
+        var picks = stops.Where(s => s.Kind == StopKind.Pickup).Select(s => s.PackageId).Distinct().Order().ToList();
         string action = string.Join(" y ", new[] { drops.Count > 0 ? "entregar paquetes " + string.Join(", ", drops) : "", picks.Count > 0 ? "recoger paquete" + (picks.Count > 1 ? "s " : " ") + string.Join(", ", picks) : "" }.Where(x => x.Length > 0));
         Console.WriteLine($" {n}. Ir de {current} a {target} ({distance} m): {action}.");
         Console.WriteLine($"      Camino: {string.Join(" -> ", path)}");
